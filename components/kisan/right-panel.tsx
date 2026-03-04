@@ -7,7 +7,7 @@ import {
 } from 'recharts'
 import {
   Thermometer, Droplets, Wind, CloudRain, AlertTriangle,
-  TrendingDown, ShoppingCart, Activity, MapPin, History,
+  TrendingDown, ShoppingCart, Activity, MapPin, History, ExternalLink,
 } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { Skeleton } from '@/components/ui/skeleton'
@@ -16,6 +16,7 @@ import type {
 } from '@/types/kisan'
 import { MSP_2025 } from '@/lib/kisan-data'
 import { generateAlerts } from '@/lib/generate-alerts'
+import { getBhulelkhSearchUrl, getBhulelkhPortal } from '@/lib/bhulekh-links'
 
 interface RightPanelProps {
   weatherData: WeatherData | null
@@ -79,6 +80,86 @@ const ALERT_ICONS: Record<string, string> = {
 const ALERT_COLORS: Record<string, string> = {
   critical: '#ef4444', high: '#f97316', medium: '#facc15', low: '#22c55e',
 }
+
+// ─── Land Record Card ────────────────────────────────────────────────────────
+
+function LandRow({ label, value }: { label: string; value?: string | number }) {
+  if (!value && value !== 0) return null
+  return (
+    <div className="flex justify-between items-baseline gap-2">
+      <span className="text-[9px] text-green-700 shrink-0">{label}</span>
+      <span className="text-[10px] text-green-300 font-mono truncate text-right">{value}</span>
+    </div>
+  )
+}
+
+function FarmerLandCard({ farmer }: { farmer: Farmer }) {
+  const bhulekh = getBhulelkhSearchUrl(farmer.state, farmer.district, farmer.khasra, farmer.khataNo)
+  const portal  = getBhulelkhPortal(farmer.state)
+
+  return (
+    <div className="mt-2 rounded border overflow-hidden" style={{ borderColor: '#1a3a1a' }}>
+      {/* Name + crop header */}
+      <div className="px-2 py-1.5 flex items-center justify-between" style={{ background: '#0e1f0e' }}>
+        <div>
+          <div className="text-xs font-semibold text-yellow-400 flex items-center gap-1.5">
+            {farmer.name}
+            {farmer.isCustom && (
+              <span className="text-[8px] px-1 rounded bg-yellow-900/30 text-yellow-600 border border-yellow-900/40">
+                registered
+              </span>
+            )}
+          </div>
+          {farmer.fatherName && (
+            <div className="text-[9px] text-green-700">S/o {farmer.fatherName}</div>
+          )}
+        </div>
+        <div className="text-right">
+          <div className="text-[10px] font-medium text-green-300">{farmer.crop}</div>
+          <div className="text-[9px] text-green-700">{farmer.area} ha · {farmer.season ?? '—'}</div>
+        </div>
+      </div>
+
+      {/* Land record details */}
+      <div className="px-2 py-2 space-y-0.5" style={{ background: '#0a150a' }}>
+        <LandRow label="Khasra / Gat"   value={farmer.khasra} />
+        <LandRow label="Khata / Khewat" value={farmer.khataNo} />
+        <LandRow label="Survey / Hissa" value={farmer.surveyNo} />
+        <LandRow label="Village"        value={farmer.village} />
+        <LandRow label="Tehsil"         value={farmer.tehsil} />
+        <LandRow label="District"       value={farmer.district} />
+        <LandRow label="State"          value={farmer.state} />
+        <LandRow label="Land Type"      value={farmer.landType} />
+        <LandRow label="Ownership"      value={farmer.ownership} />
+        {farmer.phone && <LandRow label="Phone" value={farmer.phone} />}
+        <LandRow
+          label="Coordinates"
+          value={`${farmer.lat.toFixed(4)}, ${farmer.lon.toFixed(4)}`}
+        />
+      </div>
+
+      {/* Bhulekh portal link */}
+      {bhulekh && portal && (
+        <div className="px-2 py-1.5 border-t" style={{ borderColor: '#1a2e1a', background: '#0a150a' }}>
+          <a
+            href={bhulekh}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center gap-1 text-[10px] text-blue-400 hover:text-blue-300 transition-colors"
+          >
+            <ExternalLink className="w-3 h-3 shrink-0" />
+            <span>Open {portal.portalName}</span>
+            {portal.hasDeepLink
+              ? <span className="text-green-700 ml-auto text-[9px]">pre-filled ↗</span>
+              : <span className="text-green-800 ml-auto text-[9px]">search manually ↗</span>}
+          </a>
+        </div>
+      )}
+    </div>
+  )
+}
+
+// ─── RightPanel ──────────────────────────────────────────────────────────────
 
 export function RightPanel({
   weatherData, soilData, mandiData, nasaData, nasaLoading,
@@ -147,18 +228,7 @@ export function RightPanel({
         )}
 
         {selectedFarmer && (
-          <div className="mt-2 p-2 rounded border" style={{ background: '#0a150a', borderColor: '#1a2e1a' }}>
-            <div className="flex items-center justify-between">
-              <div>
-                <div className="text-xs font-semibold text-yellow-400">{selectedFarmer.name}</div>
-                <div className="text-[10px] text-green-500">{selectedFarmer.khasra} · {selectedFarmer.district}</div>
-              </div>
-              <div className="text-right">
-                <div className="text-xs text-green-300">{selectedFarmer.crop}</div>
-                <div className="text-[10px] text-green-600">{selectedFarmer.area} ha</div>
-              </div>
-            </div>
-          </div>
+          <FarmerLandCard farmer={selectedFarmer} />
         )}
       </div>
 

@@ -6,6 +6,7 @@ import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
 import type { Farmer, LocationInfo, WeatherData } from '@/types/kisan'
 import { SAMPLE_FARMERS } from '@/lib/kisan-data'
+import { loadCustomFarmers } from '@/components/kisan/farmer-form'
 
 interface HeaderProps {
   onFarmerSelect: (farmer: Farmer) => void
@@ -13,6 +14,8 @@ interface HeaderProps {
   weatherData: WeatherData | null
   loading: boolean
   apiKeySlot: ReactNode
+  addFarmerSlot: ReactNode
+  customFarmerCount: number
 }
 
 // APIs confirmed working for India
@@ -22,11 +25,21 @@ const API_SOURCES = [
   { label: 'Nominatim',  working: true },
 ]
 
-export function Header({ onFarmerSelect, locationInfo, weatherData, loading, apiKeySlot }: HeaderProps) {
+export function Header({
+  onFarmerSelect, locationInfo, weatherData, loading,
+  apiKeySlot, addFarmerSlot, customFarmerCount,
+}: HeaderProps) {
   const [query, setQuery] = useState('')
   const [open, setOpen] = useState(false)
   const [time, setTime] = useState('')
+  const [allFarmers, setAllFarmers] = useState(SAMPLE_FARMERS)
   const dropdownRef = useRef<HTMLDivElement>(null)
+
+  // Reload farmer list whenever custom count changes (farmer added/deleted)
+  useEffect(() => {
+    const custom = loadCustomFarmers()
+    setAllFarmers([...SAMPLE_FARMERS, ...custom])
+  }, [customFarmerCount])
 
   useEffect(() => {
     const update = () => {
@@ -49,13 +62,16 @@ export function Header({ onFarmerSelect, locationInfo, weatherData, loading, api
     return () => document.removeEventListener('mousedown', handler)
   }, [])
 
+  const q = query.toLowerCase()
   const filtered = query.length > 0
-    ? SAMPLE_FARMERS.filter(f =>
-        f.name.toLowerCase().includes(query.toLowerCase()) ||
-        f.district.toLowerCase().includes(query.toLowerCase()) ||
-        f.khasra.toLowerCase().includes(query.toLowerCase()),
+    ? allFarmers.filter(f =>
+        f.name.toLowerCase().includes(q) ||
+        f.district.toLowerCase().includes(q) ||
+        f.khasra.toLowerCase().includes(q) ||
+        (f.village ?? '').toLowerCase().includes(q) ||
+        (f.tehsil ?? '').toLowerCase().includes(q),
       )
-    : SAMPLE_FARMERS
+    : allFarmers
 
   return (
     <header
@@ -67,7 +83,7 @@ export function Header({ onFarmerSelect, locationInfo, weatherData, loading, api
       }}
     >
       {/* Logo */}
-      <div className="flex items-center gap-2.5 min-w-[200px]">
+      <div className="flex items-center gap-2.5 min-w-50">
         <div className="flex items-center justify-center w-7 h-7 rounded-md bg-green-600/20 border border-green-600/30">
           <Sprout className="w-4 h-4 text-green-400" />
         </div>
@@ -114,8 +130,19 @@ export function Header({ onFarmerSelect, locationInfo, weatherData, loading, api
                   {farmer.name[0]}
                 </div>
                 <div className="flex-1 min-w-0">
-                  <div className="text-xs font-medium text-green-200">{farmer.name}</div>
-                  <div className="text-[10px] text-green-600">{farmer.khasra} · {farmer.district}, {farmer.state}</div>
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-xs font-medium text-green-200">{farmer.name}</span>
+                    {farmer.isCustom && (
+                      <span className="text-[8px] px-1 rounded bg-yellow-900/30 text-yellow-500 border border-yellow-900/40">
+                        registered
+                      </span>
+                    )}
+                  </div>
+                  <div className="text-[10px] text-green-600">
+                    {farmer.khasra}
+                    {farmer.village ? ` · ${farmer.village}` : ''}
+                    {` · ${farmer.district}, ${farmer.state}`}
+                  </div>
                 </div>
                 <div className="text-right shrink-0">
                   <div className="text-[10px] text-green-400 font-medium">{farmer.crop}</div>
@@ -162,6 +189,9 @@ export function Header({ onFarmerSelect, locationInfo, weatherData, loading, api
           ))}
           <span className="text-[9px] text-green-700 ml-1">live</span>
         </div>
+
+        {/* Add farmer button */}
+        {addFarmerSlot}
 
         {/* API key button */}
         {apiKeySlot}

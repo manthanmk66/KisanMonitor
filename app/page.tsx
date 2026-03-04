@@ -6,6 +6,7 @@ import { Header } from '@/components/kisan/header'
 import { LeftPanel } from '@/components/kisan/left-panel'
 import { RightPanel } from '@/components/kisan/right-panel'
 import { ApiKeyButton } from '@/components/kisan/api-key-modal'
+import { FarmerFormButton } from '@/components/kisan/farmer-form'
 import type {
   WeatherData, SoilData, MandiPrice, LocationInfo, LayerConfig, Farmer, NASAPowerData,
 } from '@/types/kisan'
@@ -48,6 +49,7 @@ export default function KisanMonitorPage() {
   const [selectedFarmer, setSelectedFarmer] = useState<Farmer | null>(null)
   const [layers, setLayers]                 = useState<LayerConfig[]>(DEFAULT_LAYERS)
   const [apiKey, setApiKey]                 = useState(DATA_GOV_API_KEY)
+  const [customFarmerCount, setCustomFarmerCount] = useState(0)
   const [loading, setLoading]               = useState({
     weather: false, soil: false, mandi: false, geocode: false, nasa: false,
   })
@@ -156,6 +158,12 @@ export default function KisanMonitorPage() {
     setApiKey(newKey)
   }, [])
 
+  const handleFarmerRegistered = useCallback((farmer: Farmer) => {
+    setCustomFarmerCount(c => c + 1)
+    // Auto-select the newly registered farmer
+    handleFarmerSelect(farmer)
+  }, [handleFarmerSelect])
+
   const anyLoading = loading.weather || loading.geocode
 
   return (
@@ -166,6 +174,8 @@ export default function KisanMonitorPage() {
         weatherData={weatherData}
         loading={anyLoading}
         apiKeySlot={<ApiKeyButton onKeyChange={handleApiKeyChange} />}
+        addFarmerSlot={<FarmerFormButton onFarmerSaved={handleFarmerRegistered} />}
+        customFarmerCount={customFarmerCount}
       />
 
       <main className="flex flex-1 overflow-hidden">

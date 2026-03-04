@@ -10,13 +10,23 @@ export interface MandiLocation {
 export interface Farmer {
   id: string
   name: string
+  fatherName?: string
   khasra: string
+  khataNo?: string       // Khata / Khewat number
+  surveyNo?: string      // Revenue survey number
+  village?: string
+  tehsil?: string
   district: string
   state: string
   lat: number
   lon: number
   crop: string
-  area: number // hectares
+  area: number           // hectares
+  landType?: 'Irrigated' | 'Rainfed' | 'Partially Irrigated'
+  ownership?: 'Owned' | 'Leased' | 'Shared'
+  season?: 'Kharif' | 'Rabi' | 'Zaid' | 'Annual'
+  phone?: string
+  isCustom?: boolean     // true = added by user, false = sample data
 }
 
 export interface DroughtZone {
